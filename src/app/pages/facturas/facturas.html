@@ -1,0 +1,214 @@
+<div class="d-flex flex-column gap-4">
+  <h4 class="fw-semibold text-dark m-0">Carga de Facturas</h4>
+
+  <!-- Upload section -->
+  <div class="card border shadow-sm">
+    <div class="card-body">
+      <div class="input-group">
+        <span class="input-group-text bg-light text-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <path d="M2 15h10"></path>
+            <path d="m9 18 3-3-3-3"></path>
+          </svg>
+          XML
+        </span>
+        <input
+          type="file"
+          id="formFileXml"
+          (change)="onFileSelected($event)"
+          accept=".xml"
+          class="form-control"
+        />
+      </div>
+      <div class="form-text">Solo se admiten archivos con extension .xml</div>
+
+      @if (error()) {
+        <div class="text-danger small mt-1">{{ error() }}</div>
+      }
+    </div>
+  </div>
+
+  @if (responseMessage()) {
+    <div
+      class="alert py-2 mb-0"
+      [class]="responseSuccess() ? 'alert-success' : 'alert-danger'"
+    >{{ responseMessage() }}</div>
+  }
+
+  @if (datosFacturaClean()) {
+    @let f = datosFacturaClean()!;
+
+    <div class="card border shadow-sm">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+        <h6 class="fw-semibold text-dark m-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1">
+            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path>
+            <path d="M14 2v4a2 2 0 0 0 2 2h4"></path>
+          </svg>
+          Factura Autorizada Detectada
+        </h6>
+        <span class="badge bg-success rounded-pill">
+          No. {{ f.infoTributaria.estab }}-{{ f.infoTributaria.ptoEmi }}-{{ f.infoTributaria.secuencial }}
+        </span>
+      </div>
+
+      <div class="card-body">
+        <!-- Local selector -->
+        <div class="mb-4 pb-4 border-bottom">
+          <div class="text-uppercase small fw-bold text-body mb-2">
+            Asignar a Establecimiento / Local
+          </div>
+          <select class="form-select w-auto" [(ngModel)]="codigoLocalSeleccionado">
+            <option value="" disabled selected>-- Seleccione el local de destino --</option>
+            <option value="1">TECNICENTRO FENIX</option>
+            <!--<option value="2">FENIX REPUESTOS</option>-->
+          </select>
+          <small class="text-secondary d-block mt-1">
+            * Seleccione la sucursal antes de procesar para asegurar el control de inventario correcto.
+          </small>
+        </div>
+
+        <!-- Info rows -->
+        <div class="row mb-4 pb-4 border-bottom">
+          <div class="col-md-6 mb-3 mb-md-0">
+            <div class="text-uppercase small fw-bold text-body mb-2">Datos de la Empresa</div>
+            <h5 class="fw-bold text-primary m-0">{{ f.infoTributaria.razonSocial }}</h5>
+            <p class="small text-secondary mb-0"><strong>RUC:</strong> {{ f.infoTributaria.ruc }}</p>
+          </div>
+          <div class="col-md-6">
+            <div class="text-uppercase small fw-bold text-body mb-2">Datos del Cliente</div>
+            <h6 class="fw-medium text-dark m-0">{{ f.infoFactura.razonSocialComprador }}</h6>
+            <p class="small text-secondary mb-0"><strong>Fecha Emision:</strong> {{ f.infoFactura.fechaEmision }}</p>
+          </div>
+        </div>
+
+        <form [formGroup]="facturaForm" (ngSubmit)="enviarAlBackend()">
+          <!-- Product table -->
+          <div class="table-responsive border rounded mb-4">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="text-uppercase small fw-semibold text-secondary">Descripcion Producto</th>
+                  <th class="text-uppercase small fw-semibold text-secondary text-end">Emp.</th>
+                  <th class="text-uppercase small fw-semibold text-secondary text-end">Cantidad</th>
+                  <th class="text-uppercase small fw-semibold text-secondary text-end">Costo</th>
+                  <th class="text-uppercase small fw-semibold text-secondary text-end">Subtotal</th>
+                  <th class="text-uppercase small fw-semibold text-secondary text-end">Valor IVA</th>
+                  <th class="text-uppercase small fw-semibold text-secondary text-end">valor Total</th>
+                  <th class="text-uppercase small fw-semibold text-secondary text-end">Costo unitario</th>
+                  <th class="text-uppercase small fw-semibold text-secondary text-end">Porcentaje</th>
+                  <th class="text-uppercase small fw-semibold text-secondary text-end">Precio Local</th>
+                  <th class="text-uppercase small fw-semibold text-secondary text-end">Precio Venta (PVP)</th>
+                </tr>
+              </thead>
+              <tbody formArrayName="productos">
+                @for (detalle of asArray(f?.detalles?.detalle); track detalle) {
+                  <tr [formGroupName]="$index">
+                    <td class="fw-medium">{{ detalle.descripcion }}</td>
+                    <td class="text-end">{{ detalle.detallesAdicionales==null ? 'N/A':detalle.detallesAdicionales.detAdicional[0].valor }}</td>
+                    <td class="text-end">
+                      <div class="input-group input-group-sm w-auto ms-auto" style="max-width: 60px">
+                        <input
+                          type="text"
+                          formControlName="cantidad"
+                          class="form-control form-control-sm text-end"
+                          placeholder="0"
+                          [class.is-invalid]="productos.at($index).get('cantidad')?.touched && productos.at($index).get('cantidad')?.invalid"
+                        />
+                      </div>
+                    </td>
+                    <td class="text-end">$ {{ detalle.precioTotalSinImpuesto / (productos.at($index).get('cantidad')?.value) | number: '1.2-2' }}</td>
+                    <td class="text-end">$ {{ detalle.precioTotalSinImpuesto | number: '1.2-2' }}</td>
+                    <td class="text-end">$ {{ (detalle.precioTotalSinImpuesto * detalle.impuestos.impuesto.tarifa) / 100 | number: '1.2-2' }}</td>
+                    <td class="text-end">$ {{ (+detalle.precioTotalSinImpuesto) + (((+detalle.precioTotalSinImpuesto) * (+detalle.impuestos.impuesto.tarifa)) / 100) | number: '1.2-2' }} </td>
+                    <td class="text-end">
+                      <span class="small">{{ getCostoUnitario(detalle, productos.at($index).get('cantidad')?.value) | number: '1.2-2' }}</span>
+                    </td>
+                    <td class="text-end">
+                      <select
+                        formControlName="porcentaje"
+                        class="form-select form-select-sm text-end"
+                        style="width: 80px"
+                      >
+                        <option [value]="0">0%</option>
+                        <option [value]="15">15%</option>
+                        <option [value]="20">20%</option>
+                        <option [value]="20">25%</option>
+                        <option [value]="30">30%</option>
+                      </select>
+                    </td>
+                    <td class="text-end">
+                      <span class="small fw-semibold text-primary">${{ getPrecioLocal(detalle, $index) | number: '1.2-2' }}</span>
+                    </td>
+                    <td class="text-end">
+                      <div class="input-group input-group-sm w-auto ms-auto" style="max-width: 130px">
+                        <span class="input-group-text bg-light">$</span>
+                        <input
+                          type="text"
+                          formControlName="pvp"
+                          class="form-control form-control-sm text-end"
+                          step="0.01"
+                          placeholder="0.00"
+                          [class.is-invalid]="productos.at($index).get('pvp')?.touched && productos.at($index).get('pvp')?.invalid"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="text-center text-secondary py-4">
+                      No se encontraron productos registrados en la seccion de detalles.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Totals -->
+          <div class="d-flex justify-content-end mb-4">
+            <div class="border rounded bg-light" style="min-width: 280px">
+              <div class="d-flex justify-content-between align-items-center px-3 py-2">
+                <span class="small text-secondary">Subtotal Sin Impuestos:</span>
+                <span class="fw-semibold text-dark">$ {{ f.infoFactura.totalSinImpuestos | number: '1.2-2' }}</span>
+              </div>
+              <hr class="my-0" />
+              <div class="d-flex justify-content-between align-items-center px-3 py-2 bg-primary bg-opacity-10">
+                <span class="fw-bold text-dark">Importe Total:</span>
+                <span class="fs-5 text-success fw-bold">$ {{ f.infoFactura.importeTotal | number: '1.2-2' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+            <button type="button" class="btn btn-outline-secondary" (click)="cancelXml()">Cancelar</button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+            >
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                Procesando...
+              } @else {
+                Procesar factura
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  @if (!datosFacturaClean() && !error()) {
+    <div class="text-center text-secondary py-5">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-3 opacity-50">
+        <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path>
+        <path d="M14 2v4a2 2 0 0 0 2 2h4"></path>
+      </svg>
+      <p class="mb-0">Selecciona un archivo XML de factura autorizada para comenzar</p>
+    </div>
+  }
+</div>

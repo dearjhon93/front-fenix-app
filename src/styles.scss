@@ -1,1 +1,28 @@
-/* You can add global styles to this file, and also import other style files */
+// Custom Bootstrap variables (must come before @use)
+$primary: #7b61ff;
+$dark: #1a1a1a;
+$body-color: #4b5563;
+$secondary: #6b7280;
+$border-color: #e5e7eb;
+$success: #16a34a;
+$danger: #dc2626;
+$warning: #ea580c;
+$border-radius: 0.5rem;
+$font-family-sans-serif: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+@use "bootstrap/scss/bootstrap";
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #f9fafb;
+  color: $dark;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root,
+app-root {
+  display: block;
+  min-height: 100vh;
+}
