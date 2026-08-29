@@ -1,0 +1,18 @@
+{
+  "hosting": {
+    "public": "dist/front-sga-fenix/browser",
+    "predeploy": "npm run build:hosting",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "index.csr.html"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:front-sga-fenix": "node dist/front-sga-fenix/server/server.mjs"
+    "serve:ssr:front-sga-fenix": "node dist/front-sga-fenix/server/server.mjs",
+    "build:hosting": "ng build && node scripts/prepare-hosting.mjs"
   },
   "private": true,
   "packageManager": "npm@10.9.9",

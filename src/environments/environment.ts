@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:9000/wsfenix/api/v1',
+  apiUrl: 'https://mi-backend-131554770609.us-central1.run.app/wsfenix/api/v1',
 };
