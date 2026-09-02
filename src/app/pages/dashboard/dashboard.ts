@@ -15,19 +15,10 @@ import { DashboardService, DashboardResumenDto } from './dashboard.service';
       </p>
 
       @if (loading()) {
-        <div class="row g-3">
-          @for (i of [1,2,3,4,5,6]; track i) {
-            <div class="col-sm-6 col-lg-4">
-              <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                  <div class="placeholder-glow">
-                    <span class="placeholder col-6"></span>
-                    <span class="placeholder col-4"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          }
+        <div class="d-flex justify-content-center align-items-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
         </div>
       } @else {
         <div class="row g-3">
@@ -39,18 +30,18 @@ import { DashboardService, DashboardResumenDto } from './dashboard.service';
               </div>
             </div>
           </div>
-          <div class="col-sm-6 col-lg-4">
+          <!--<div class="col-sm-6 col-lg-4">
             <div class="card border shadow-sm h-100">
               <div class="card-body d-flex flex-column gap-1">
                 <span class="text-uppercase small fw-medium text-secondary">Proveedores</span>
                 <span class="fs-2 fw-bold text-dark">{{ resumen()?.totalProveedores }}</span>
               </div>
             </div>
-          </div>
+          </div>-->
           <div class="col-sm-6 col-lg-4">
             <div class="card border shadow-sm h-100">
               <div class="card-body d-flex flex-column gap-1">
-                <span class="text-uppercase small fw-medium text-secondary">Facturas</span>
+                <span class="text-uppercase small fw-medium text-secondary">Facturas Compra</span>
                 <span class="fs-2 fw-bold text-dark">{{ resumen()?.totalFacturas }}</span>
               </div>
             </div>
@@ -58,7 +49,7 @@ import { DashboardService, DashboardResumenDto } from './dashboard.service';
           <div class="col-sm-6 col-lg-4">
             <div class="card border shadow-sm h-100">
               <div class="card-body d-flex flex-column gap-1">
-                <span class="text-uppercase small fw-medium text-secondary">Ventas Totales</span>
+                <span class="text-uppercase small fw-medium text-secondary">Total Facturas Compra</span>
                 <span class="fs-2 fw-bold text-dark">\${{ resumen()?.ventasTotales }}</span>
               </div>
             </div>

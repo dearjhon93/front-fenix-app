@@ -21,13 +21,9 @@ import { InventarioService, ProductoDto } from './inventario.service';
       </div>
 
       @if (loading()) {
-        <div class="card border shadow-sm">
-          <div class="card-body p-0">
-            @for (i of [1,2,3,4,5]; track $index) {
-              <div class="placeholder-glow border-bottom py-3 px-3">
-                <span class="placeholder col-12"></span>
-              </div>
-            }
+        <div class="d-flex justify-content-center align-items-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
           </div>
         </div>
       } @else {
