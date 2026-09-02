@@ -99,12 +99,19 @@ export class FacturasComponent {
   }
 
   enviarAlBackend() {
+    this.saving.set(true);
 
     this.verificarCampos();
 
-    if (this.facturaForm.invalid || !this.xmlOriginal) return;
+    if (this.facturaForm.invalid || !this.xmlOriginal){ 
+      this.facturaForm.markAllAsTouched();
+      this.saving.set(false);
+      alert('Por favor, completar los campos faltantes para continuar el proceso.');
+      return
+    }
 
     if (!this.codigoLocalSeleccionado) {
+      this.saving.set(false);
       alert('Por favor, selecciona un local de destino antes de guardar.');
       return;
     }
@@ -144,7 +151,8 @@ export class FacturasComponent {
 
     this.facturaService.guardarFactura(facturaCompleta).subscribe({
       next: () => {
-        alert('Factura completa guardada con exito en el sistema.');
+        this.saving.set(false);
+        alert('Factura registrada correctamente.');
         this.facturaForm.reset();
         this.productos.clear();
         this.datosFacturaClean.set(null);
@@ -152,9 +160,10 @@ export class FacturasComponent {
         this.xmlOriginal = null;
       },
       error: (err) => {
+        this.saving.set(false);
         console.error('Error en el servidor:', err);
         if (err?.status === 409) {
-          alert('Esta factura ya fue subida anteriormente.');
+          alert('La factura ya fue ingresada en el sistema.');
         } else {
           alert('No se pudo guardar la transaccion en el servidor.');
         }
