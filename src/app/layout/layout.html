@@ -38,23 +38,37 @@
     </div>
   </aside>
 
+  <!-- Backdrop mobile: click fuera para ocultar -->
+  @if (menuOpen()) {
+    <div class="sidebar-backdrop d-lg-none" (click)="closeMenu()"></div>
+  }
+
   <!-- Main -->
-  <main class="flex-grow-1 d-flex flex-column" style="margin-left: 250px; height: 100vh; overflow: hidden">
+  <main class="main-content flex-grow-1 d-flex flex-column" style="margin-left: 250px; height: 100vh; overflow: hidden">
 
     <!-- Top bar mobile -->
-    <header class="bg-white border-bottom py-2 px-3 d-none d-md-none d-lg-none d-xl-none">
-      <div class="d-flex align-items-center">
+    <header class="bg-white border-bottom py-2 px-3 d-lg-none">
+      <div class="d-flex align-items-center gap-2">
         <button
           (click)="toggleMenu()"
           class="btn btn-sm btn-outline-secondary"
-          aria-label="Toggle menu"
+          [attr.aria-label]="menuOpen() ? 'Ocultar menu' : 'Mostrar menu'"
+          [attr.aria-expanded]="menuOpen()"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="3" x2="21" y1="6" y2="6"></line>
-            <line x1="3" x2="21" y1="12" y2="12"></line>
-            <line x1="3" x2="21" y1="18" y2="18"></line>
-          </svg>
+          @if (menuOpen()) {
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" x2="6" y1="6" y2="18"></line>
+              <line x1="6" x2="18" y1="6" y2="18"></line>
+            </svg>
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" x2="21" y1="6" y2="6"></line>
+              <line x1="3" x2="21" y1="12" y2="12"></line>
+              <line x1="3" x2="21" y1="18" y2="18"></line>
+            </svg>
+          }
         </button>
+        <span class="fw-semibold d-lg-none">{{ menuOpen() ? 'Ocultar menú' : 'Mostrar menú' }}</span>
       </div>
     </header>
 
