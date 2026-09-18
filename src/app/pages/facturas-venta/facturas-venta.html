@@ -1,0 +1,274 @@
+<div class="d-flex flex-column gap-4">
+  <h4 class="fw-semibold text-dark m-0">Carga de Facturas de Venta</h4>
+
+  <!-- Upload section -->
+  <div class="card border shadow-sm">
+    <div class="card-body">
+      <div class="input-group">
+        <span class="input-group-text bg-light text-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <path d="M2 15h10"></path>
+            <path d="m9 18 3-3-3-3"></path>
+          </svg>
+          XML
+        </span>
+        <input
+          type="file"
+          id="formFileXmlVenta"
+          (change)="onFileSelected($event)"
+          accept=".xml"
+          class="form-control"
+        />
+      </div>
+      <div class="form-text">Solo se admiten archivos con extension .xml</div>
+
+      @if (error()) {
+        <div class="text-danger small mt-1">{{ error() }}</div>
+      }
+    </div>
+  </div>
+
+  @if (responseMessage()) {
+    <div
+      class="alert py-2 mb-0"
+      [class]="responseSuccess() ? 'alert-success' : 'alert-danger'"
+    >{{ responseMessage() }}</div>
+  }
+
+  @if (factura()) {
+    @let f = factura()!;
+
+    <div class="card border shadow-sm">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+        <h6 class="fw-semibold text-dark m-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1">
+            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path>
+            <path d="M14 2v4a2 2 0 0 0 2 2h4"></path>
+          </svg>
+          Factura de Venta Detectada (solo lectura)
+        </h6>
+        <span class="badge bg-success rounded-pill">
+          No. {{ f.infoTributaria.estab }}-{{ f.infoTributaria.ptoEmi }}-{{ f.infoTributaria.secuencial }}
+        </span>
+      </div>
+
+      <div class="card-body">
+        <!-- Info rows -->
+        <div class="row mb-4 pb-4 border-bottom">
+          <div class="col-md-6 mb-3 mb-md-0">
+            <div class="text-uppercase small fw-bold text-body mb-2">Datos del Emisor</div>
+            <h5 class="fw-bold text-primary m-0">{{ f.infoTributaria.razonSocial }}</h5>
+            <p class="small text-secondary mb-0"><strong>RUC:</strong> {{ f.infoTributaria.ruc }}</p>
+          </div>
+          <div class="col-md-6">
+            <div class="text-uppercase small fw-bold text-body mb-2">Datos del Cliente</div>
+            <h6 class="fw-medium text-dark m-0">{{ f.infoFactura.razonSocialComprador }}</h6>
+            <p class="small text-secondary mb-0"><strong>RUC / CI:</strong> {{ f.infoFactura.identificacionComprador }}</p>
+            <p class="small text-secondary mb-0"><strong>Fecha Emision:</strong> {{ f.infoFactura.fechaEmision }}</p>
+          </div>
+        </div>
+
+        <!-- Product table (readonly) -->
+        <div class="table-responsive border rounded mb-4">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="text-uppercase small fw-semibold text-secondary">Descripcion Producto</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Codigo Principal</th>
+                <th class="text-uppercase small fw-semibold text-secondary text-end">Cantidad</th>
+                <th class="text-uppercase small fw-semibold text-secondary text-end">Precio Unitario</th>
+                <th class="text-uppercase small fw-semibold text-secondary text-end">Descuento</th>
+                <th class="text-uppercase small fw-semibold text-secondary text-end">Subtotal</th>
+                <th class="text-uppercase small fw-semibold text-secondary text-end">Valor IVA</th>
+                <th class="text-uppercase small fw-semibold text-secondary text-end">Valor Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (detalle of f.detalles.detalle; track $index) {
+                <tr>
+                  <td class="fw-medium">{{ detalle.descripcion }}</td>
+                  <td>{{ detalle.codigoPrincipal }}</td>
+                  <td class="text-end">{{ detalle.cantidad }}</td>
+                  <td class="text-end">$ {{ detalle.precioUnitario | number: '1.2-2' }}</td>
+                  <td class="text-end">$ {{ detalle.descuento | number: '1.2-2' }}</td>
+                  <td class="text-end">$ {{ detalle.precioTotalSinImpuesto | number: '1.2-2' }}</td>
+                  <td class="text-end">
+                    @for (imp of (detalle.impuestos?.impuesto ?? []); track $index) {
+                      <span>$ {{ imp.valor | number: '1.2-2' }}</span>
+                    } @empty {
+                      <span>$ {{ 0 | number: '1.2-2' }}</span>
+                    }
+                  </td>
+                  <td class="text-end fw-semibold">
+                    $ {{ (+detalle.precioTotalSinImpuesto + totalImpuestos(detalle)) | number: '1.2-2' }}
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="8" class="text-center text-secondary py-4">
+                    No se encontraron productos registrados en la seccion de detalles.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Totals -->
+        <div class="d-flex justify-content-end mb-4">
+          <div class="border rounded bg-light" style="min-width: 280px">
+            <div class="d-flex justify-content-between align-items-center px-3 py-2">
+              <span class="small text-secondary">Subtotal Sin Impuestos:</span>
+              <span class="fw-semibold text-dark">$ {{ f.infoFactura.totalSinImpuestos | number: '1.2-2' }}</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center px-3 py-2">
+              <span class="small text-secondary">Descuento:</span>
+              <span class="fw-semibold text-dark">$ {{ f.infoFactura.totalDescuento | number: '1.2-2' }}</span>
+            </div>
+            <hr class="my-0" />
+            <div class="d-flex justify-content-between align-items-center px-3 py-2 bg-primary bg-opacity-10">
+              <span class="fw-bold text-dark">Importe Total:</span>
+              <span class="fs-5 text-success fw-bold">$ {{ f.infoFactura.importeTotal | number: '1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+          <button type="button" class="btn btn-outline-secondary" (click)="cancelXml()">Cancelar</button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="enviarAlBackend()"
+            [disabled]="saving()"
+          >
+            @if (saving()) {
+              <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+              Procesando factura...
+            } @else {
+              Guardar
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (!factura() && !error()) {
+    <div class="text-center text-secondary py-5">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-3 opacity-50">
+        <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path>
+        <path d="M14 2v4a2 2 0 0 0 2 2h4"></path>
+      </svg>
+      <p class="mb-0">Selecciona un archivo XML de factura de venta autorizada para comenzar</p>    </div>
+  }
+
+  <!-- Historial de facturas de venta cargadas -->
+  <div class="card border shadow-sm">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
+      <h6 class="fw-semibold text-dark m-0">
+        Facturas de venta cargadas
+        <span class="badge bg-primary rounded-pill ms-1">{{ historial().length }}</span>
+      </h6>
+      <button type="button" class="btn btn-outline-primary btn-sm" (click)="cargarHistorial()" [disabled]="cargandoHistorial()">
+        @if (cargandoHistorial()) {
+          <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+          Cargando...
+        } @else {
+          Actualizar
+        }
+      </button>
+    </div>
+    <div class="card-body">
+      <div class="input-group input-group-sm mb-3" style="max-width: 380px">
+        <span class="input-group-text bg-light text-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </svg>
+        </span>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Filtrar por número, cliente o clave..."
+          [value]="filtroHistorial()"
+          (input)="onFiltroHistorial($event)"
+        />
+      </div>
+
+      @if (cargandoHistorial()) {
+        <div class="d-flex justify-content-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+        </div>
+      } @else {
+        <div class="table-responsive border rounded">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 2rem;"></th>
+                <th class="text-uppercase small fw-semibold text-secondary">Número</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Fecha</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Cliente</th>
+                <th class="text-uppercase small fw-semibold text-secondary text-end">Ítems</th>
+                <th class="text-uppercase small fw-semibold text-secondary text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (h of historialFiltrado(); track h.claveAcceso) {
+                <tr (click)="toggleHistorial(h.claveAcceso)" style="cursor: pointer;" [class.table-active]="expandedHistorial() === h.claveAcceso">
+                  <td class="text-secondary text-center">{{ expandedHistorial() === h.claveAcceso ? '▾' : '▸' }}</td>
+                  <td class="fw-medium text-nowrap">{{ h.establecimiento }}-{{ h.puntoEmision }}-{{ h.secuencial }}</td>
+                  <td class="text-nowrap">{{ h.fechaEmision }}</td>
+                  <td>
+                    <div class="fw-medium">{{ h.cliente?.razonSocial ?? '—' }}</div>
+                    <div class="small text-secondary">{{ h.cliente?.idCliente ?? '' }}</div>
+                  </td>
+                  <td class="text-end">{{ (h.detalles ?? []).length }}</td>
+                  <td class="text-end fw-semibold text-nowrap">$ {{ h.importeTotal | number: '1.2-2' }}</td>
+                </tr>
+                @if (expandedHistorial() === h.claveAcceso) {
+                  <tr class="table-active">
+                    <td></td>
+                    <td colspan="5" class="py-2">
+                      <div class="table-responsive">
+                        <table class="table table-sm bg-white align-middle mb-0">
+                          <thead class="table-light">
+                            <tr>
+                              <th class="small">Descripción</th>
+                              <th class="small text-end">Cant.</th>
+                              <th class="small text-end">P. Unit.</th>
+                              <th class="small text-end">Subtotal</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (d of (h.detalles ?? []); track d.idDetalle) {
+                              <tr>
+                                <td class="small">{{ d.descripcion }}</td>
+                                <td class="small text-end">{{ d.cantidad }}</td>
+                                <td class="small text-end">$ {{ d.precioUnitario | number: '1.2-2' }}</td>
+                                <td class="small text-end">$ {{ d.precioTotalSinImpuesto | number: '1.2-2' }}</td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              } @empty {
+                <tr>
+                  <td colspan="6" class="text-center text-secondary py-4">
+                    {{ historial().length === 0 ? 'Aún no hay facturas de venta cargadas.' : 'Sin coincidencias con el filtro.' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+</div>

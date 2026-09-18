@@ -135,7 +135,7 @@
                         <option [value]="0">0%</option>
                         <option [value]="15">15%</option>
                         <option [value]="20">20%</option>
-                        <option [value]="20">25%</option>
+                        <option [value]="25">25%</option>
                         <option [value]="30">30%</option>
                         <option [value]="35">35%</option>
                       </select>
@@ -159,7 +159,7 @@
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="7" class="text-center text-secondary py-4">
+                    <td colspan="11" class="text-center text-secondary py-4">
                       No se encontraron productos registrados en la seccion de detalles.
                     </td>
                   </tr>
@@ -212,4 +212,112 @@
       <p class="mb-0">Selecciona un archivo XML de factura autorizada para comenzar</p>
     </div>
   }
+
+  <!-- Historial de facturas de compra cargadas -->
+  <div class="card border shadow-sm">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
+      <h6 class="fw-semibold text-dark m-0">
+        Facturas de compra cargadas
+        <span class="badge bg-primary rounded-pill ms-1">{{ historial().length }}</span>
+      </h6>
+      <button type="button" class="btn btn-outline-primary btn-sm" (click)="cargarHistorial()" [disabled]="cargandoHistorial()">
+        @if (cargandoHistorial()) {
+          <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+          Cargando...
+        } @else {
+          Actualizar
+        }
+      </button>
+    </div>
+    <div class="card-body">
+      <div class="input-group input-group-sm mb-3" style="max-width: 380px">
+        <span class="input-group-text bg-light text-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </svg>
+        </span>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Filtrar por número, proveedor o clave..."
+          [value]="filtroHistorial()"
+          (input)="onFiltroHistorial($event)"
+        />
+      </div>
+
+      @if (cargandoHistorial()) {
+        <div class="d-flex justify-content-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+        </div>
+      } @else {
+        <div class="table-responsive border rounded">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 2rem;"></th>
+                <th class="text-uppercase small fw-semibold text-secondary">Número</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Fecha</th>
+                <th class="text-uppercase small fw-semibold text-secondary">Proveedor</th>
+                <th class="text-uppercase small fw-semibold text-secondary text-end">Ítems</th>
+                <th class="text-uppercase small fw-semibold text-secondary text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (h of historialFiltrado(); track h.id) {
+                <tr (click)="toggleHistorial(h.id)" style="cursor: pointer;" [class.table-active]="expandedHistorial() === h.id">
+                  <td class="text-secondary text-center">{{ expandedHistorial() === h.id ? '▾' : '▸' }}</td>
+                  <td class="fw-medium text-nowrap">{{ h.estab }}-{{ h.ptoEmi }}-{{ h.secuencial }}</td>
+                  <td class="text-nowrap">{{ h.fechaEmision }}</td>
+                  <td>
+                    <div class="fw-medium">{{ h.contribuyente?.razonSocial ?? h.razonSocial }}</div>
+                    <div class="small text-secondary">{{ h.contribuyente?.identificacion ?? h.ruc }}</div>
+                  </td>
+                  <td class="text-end">{{ (h.detalles ?? []).length }}</td>
+                  <td class="text-end fw-semibold text-nowrap">$ {{ h.importeTotal | number: '1.2-2' }}</td>
+                </tr>
+                @if (expandedHistorial() === h.id) {
+                  <tr class="table-active">
+                    <td></td>
+                    <td colspan="5" class="py-2">
+                      <div class="table-responsive">
+                        <table class="table table-sm bg-white align-middle mb-0">
+                          <thead class="table-light">
+                            <tr>
+                              <th class="small">Descripción</th>
+                              <th class="small text-end">Cant.</th>
+                              <th class="small text-end">P. Unit.</th>
+                              <th class="small text-end">Subtotal</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (d of (h.detalles ?? []); track d.id) {
+                              <tr>
+                                <td class="small">{{ d.descripcion }}</td>
+                                <td class="small text-end">{{ d.cantidad }}</td>
+                                <td class="small text-end">$ {{ d.precioUnitario | number: '1.2-2' }}</td>
+                                <td class="small text-end">$ {{ d.precioTotalSinImpuesto | number: '1.2-2' }}</td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              } @empty {
+                <tr>
+                  <td colspan="6" class="text-center text-secondary py-4">
+                    {{ historial().length === 0 ? 'Aún no hay facturas de compra cargadas.' : 'Sin coincidencias con el filtro.' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
 </div>

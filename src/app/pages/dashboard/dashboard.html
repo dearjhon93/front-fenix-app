@@ -1,0 +1,267 @@
+<div class="d-flex flex-column gap-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h4 class="fw-semibold text-dark m-0">Dashboard</h4>
+      <p class="text-secondary mb-0 small">Bienvenido, {{ auth.currentUser()?.name }}</p>
+    </div>
+    <button type="button" class="btn btn-outline-primary btn-sm" (click)="load()" [disabled]="loading()">
+      @if (loading()) {
+        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+        Cargando...
+      } @else {
+        Actualizar
+      }
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="d-flex justify-content-center align-items-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+  } @else if (error()) {
+    <div class="alert alert-danger py-2 mb-0">{{ error() }}</div>
+  } @else if (resumen()) {
+    @let r = resumen()!;
+
+    <!-- KPIs principales -->
+    <div class="row g-3">
+      <div class="col-sm-6 col-xl-3">
+        <div class="card border shadow-sm h-100 kpi kpi-ventas">
+          <div class="card-body d-flex flex-column gap-1">
+            <span class="text-uppercase small fw-medium text-secondary">Ventas del mes</span>
+            <span class="fs-3 fw-bold text-dark">$ {{ r.ventasDelMes | number: '1.2-2' }}</span>
+            <span class="small text-secondary">{{ r.cantidadVentasMes }} facturas este mes</span>
+            <span class="badge rounded-pill w-auto align-self-start {{ crecimientoClass(r.crecimientoVentasPct) }}">
+              {{ crecimientoTexto(r.crecimientoVentasPct) }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="card border shadow-sm h-100 kpi kpi-compras">
+          <div class="card-body d-flex flex-column gap-1">
+            <span class="text-uppercase small fw-medium text-secondary">Compras del mes</span>
+            <span class="fs-3 fw-bold text-dark">$ {{ r.comprasDelMes | number: '1.2-2' }}</span>
+            <span class="small text-secondary">{{ r.cantidadComprasMes }} facturas este mes</span>
+            <span class="badge rounded-pill w-auto align-self-start {{ crecimientoClass(r.crecimientoComprasPct) }}">
+              {{ crecimientoTexto(r.crecimientoComprasPct) }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="card border shadow-sm h-100 kpi kpi-balance">
+          <div class="card-body d-flex flex-column gap-1">
+            <span class="text-uppercase small fw-medium text-secondary">Balance del mes</span>
+            <span class="fs-3 fw-bold" [class]="(+r.balanceMes) >= 0 ? 'text-success' : 'text-danger'">
+              $ {{ r.balanceMes | number: '1.2-2' }}
+            </span>
+            <span class="small text-secondary">Ventas menos compras del mes</span>
+            <span class="small text-secondary">Hoy: <strong class="text-dark">${{ r.ventasHoy | number: '1.2-2' }}</strong> en ventas</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="card border shadow-sm h-100 kpi kpi-ticket">
+          <div class="card-body d-flex flex-column gap-1">
+            <span class="text-uppercase small fw-medium text-secondary">Ticket promedio venta</span>
+            <span class="fs-3 fw-bold text-dark">$ {{ r.ticketPromedioVenta | number: '1.2-2' }}</span>
+            <span class="small text-secondary">{{ r.cantidadFacturasVenta }} ventas acumuladas</span>
+            <span class="small text-secondary">Ticket compra: <strong class="text-dark">${{ r.ticketPromedioCompra | number: '1.2-2' }}</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs secundarios -->
+    <div class="row g-3">
+      <div class="col-6 col-lg-3">
+        <div class="card border shadow-sm h-100">
+          <div class="card-body d-flex flex-column gap-1">
+            <span class="text-uppercase small fw-medium text-secondary">Ventas totales</span>
+            <span class="fs-4 fw-bold text-dark">$ {{ r.totalVentas | number: '1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card border shadow-sm h-100">
+          <div class="card-body d-flex flex-column gap-1">
+            <span class="text-uppercase small fw-medium text-secondary">Compras totales</span>
+            <span class="fs-4 fw-bold text-dark">$ {{ r.totalCompras | number: '1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card border shadow-sm h-100">
+          <div class="card-body d-flex flex-column gap-1">
+            <span class="text-uppercase small fw-medium text-secondary">Productos activos</span>
+            <span class="fs-4 fw-bold text-dark">{{ r.totalProductos }}</span>
+            <span class="small text-secondary">{{ r.productosInactivos }} inactivos</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card border shadow-sm h-100" [class]="r.stockBajo > 0 ? 'border-warning' : ''">
+          <div class="card-body d-flex flex-column gap-1">
+            <span class="text-uppercase small fw-medium text-secondary">Stock bajo (≤ 5)</span>
+            <span class="fs-4 fw-bold" [class]="r.stockBajo > 0 ? 'text-warning' : 'text-dark'">{{ r.stockBajo }}</span>
+            <span class="small text-secondary">{{ r.totalClientes }} clientes · {{ r.cantidadFacturasCompra }} compras</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Graficos -->
+    <div class="row g-3">
+      <div class="col-lg-8">
+        <div class="card border shadow-sm h-100">
+          <div class="card-header bg-light py-3">
+            <h6 class="fw-semibold text-dark m-0">Ventas vs Compras · últimos 6 meses</h6>
+          </div>
+          <div class="card-body">
+            @if ((r.ventasUltimos6Meses ?? []).length > 0) {
+              <div class="chart-legend d-flex gap-3 mb-3 small">
+                <span><span class="dot dot-ventas"></span> Ventas</span>
+                <span><span class="dot dot-compras"></span> Compras</span>
+              </div>
+              <div class="bars">
+                @for (p of r.ventasUltimos6Meses; track p.periodo) {
+                  @let compra = (r.comprasUltimos6Meses ?? [])[$index];
+                  <div class="bar-group">
+                    <div class="bar-pair">
+                      <div
+                        class="bar bar-ventas"
+                        [style.height.%]="barraPct(p.total, maxSerieMensual())"
+                        [title]="'Ventas: $' + p.total"
+                      ></div>
+                      <div
+                        class="bar bar-compras"
+                        [style.height.%]="barraPct(compra?.total ?? 0, maxSerieMensual())"
+                        [title]="'Compras: $' + (compra?.total ?? 0)"
+                      ></div>
+                    </div>
+                    <small class="bar-label">{{ mesLabel(p.periodo) }}</small>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p class="text-secondary small mb-0">Sin datos de los últimos 6 meses.</p>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="card border shadow-sm h-100">
+          <div class="card-header bg-light py-3">
+            <h6 class="fw-semibold text-dark m-0">Ventas · últimos 7 días</h6>
+          </div>
+          <div class="card-body">
+            @if ((r.ventasUltimos7Dias ?? []).length > 0) {
+              <div class="bars bars-daily">
+                @for (p of r.ventasUltimos7Dias; track p.periodo) {
+                  <div class="bar-group">
+                    <div class="bar-pair">
+                      <div
+                        class="bar bar-ventas"
+                        [style.height.%]="barraPct(p.total, maxSerieDiaria())"
+                        [title]="'$' + p.total"
+                      ></div>
+                    </div>
+                    <small class="bar-label">{{ diaLabel(p.periodo) }}</small>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p class="text-secondary small mb-0">Sin ventas en los últimos 7 días.</p>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tablas -->
+    <div class="row g-3">
+      <div class="col-lg-5">
+        <div class="card border shadow-sm h-100">
+          <div class="card-header bg-light py-3">
+            <h6 class="fw-semibold text-dark m-0">Últimas ventas</h6>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="text-uppercase small fw-semibold text-secondary">Número</th>
+                  <th class="text-uppercase small fw-semibold text-secondary">Cliente</th>
+                  <th class="text-uppercase small fw-semibold text-secondary text-end">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (v of (r.ultimasVentas ?? []); track v.claveAcceso) {
+                  <tr>
+                    <td>
+                      <div class="fw-medium small">{{ v.numero }}</div>
+                      <div class="text-secondary small">{{ v.fechaEmision }}</div>
+                    </td>
+                    <td class="small">{{ v.cliente }}</td>
+                    <td class="text-end fw-semibold">$ {{ v.importeTotal | number: '1.2-2' }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="3" class="text-center text-secondary py-4 small">Aún no hay ventas registradas.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="card border shadow-sm h-100">
+          <div class="card-header bg-light py-3">
+            <h6 class="fw-semibold text-dark m-0">Mejores clientes</h6>
+          </div>
+          <div class="card-body d-flex flex-column gap-3">
+            @for (c of (r.topClientes ?? []); track c.idCliente) {
+              <div>
+                <div class="d-flex justify-content-between align-items-baseline gap-2">
+                  <span class="fw-medium small text-truncate">{{ c.razonSocial }}</span>
+                  <span class="fw-bold small text-nowrap">$ {{ c.totalComprado | number: '1.2-2' }}</span>
+                </div>
+                <div class="progress mt-1" role="progressbar">
+                  <div class="progress-bar" [style.width.%]="barraPct(c.totalComprado, maxTopCliente())"></div>
+                </div>
+                <small class="text-secondary">{{ c.cantidadFacturas }} facturas</small>
+              </div>
+            } @empty {
+              <p class="text-secondary small mb-0">Aún no hay datos de clientes.</p>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3">
+        <div class="card border shadow-sm h-100" [class]="r.stockBajo > 0 ? 'border-warning' : ''">
+          <div class="card-header bg-light py-3">
+            <h6 class="fw-semibold text-dark m-0">Stock bajo (top 10)</h6>
+          </div>
+          <div class="card-body d-flex flex-column gap-2">
+            @for (p of (r.stockBajoDetalle ?? []); track p.secProducto + '-' + p.secLocal) {
+              <div class="d-flex justify-content-between align-items-center gap-2 border-bottom pb-2">
+                <div class="min-w-0">
+                  <div class="fw-medium small text-truncate">{{ p.descripcion || ('Producto #' + p.secProducto) }}</div>
+                  <small class="text-secondary">Local {{ p.secLocal }}</small>
+                </div>
+                <span class="badge rounded-pill" [class]="(p.cantidad ?? 0) <= 0 ? 'bg-danger' : 'bg-warning text-dark'">
+                  {{ p.cantidad }} uds
+                </span>
+              </div>
+            } @empty {
+              <p class="text-secondary small mb-0">Sin productos con stock bajo.</p>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

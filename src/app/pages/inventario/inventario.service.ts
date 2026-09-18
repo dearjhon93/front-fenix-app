@@ -17,7 +17,8 @@ export interface ProductoHistorialDto {
   fechaInicio: string | null;
   fechaFin: string | null;
   fechaModificacion: string | null;
-  idFactura: number | null;
+  idFactura?: number | null;
+  numeroFactura?: string | null;
 }
 
 export interface ProductoDto {

@@ -1,0 +1,90 @@
+/* Dashboard mejorado: KPIs + graficos CSS puros (sin dependencias) */
+
+.kpi {
+  border-top-width: 4px;
+}
+
+.kpi-ventas {
+  border-top-color: var(--bs-primary);
+}
+
+.kpi-compras {
+  border-top-color: var(--bs-warning);
+}
+
+.kpi-balance {
+  border-top-color: var(--bs-success);
+}
+
+.kpi-ticket {
+  border-top-color: var(--bs-info);
+}
+
+.chart-legend .dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+.dot-ventas {
+  background: var(--bs-primary);
+}
+
+.dot-compras {
+  background: var(--bs-warning);
+}
+
+.bars {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  min-height: 190px;
+}
+
+.bars-daily {
+  gap: 8px;
+}
+
+.bar-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.bar-pair {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  height: 150px;
+}
+
+.bar {
+  width: 100%;
+  max-width: 34px;
+  min-height: 4px;
+  border-radius: 6px 6px 0 0;
+}
+
+.bar-ventas {
+  background: var(--bs-primary);
+}
+
+.bar-compras {
+  background: var(--bs-warning);
+}
+
+.bar-label {
+  text-align: center;
+  color: var(--bs-secondary);
+  margin-top: 6px;
+  white-space: nowrap;
+}
+
+.min-w-0 {
+  min-width: 0;
+}

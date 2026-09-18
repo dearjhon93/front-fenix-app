@@ -1,0 +1,29 @@
+/* Inventario: filas clicables, cabecera fija y detalles de stock */
+
+.mini-kpi {
+  border-left-width: 4px;
+  border-left-color: var(--bs-primary);
+}
+
+.row-click {
+  cursor: pointer;
+}
+
+.row-click:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+}
+
+.sticky-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.chevron {
+  transition: transform 0.15s ease-in-out;
+}
+
+.chevron.open {
+  transform: rotate(90deg);
+}

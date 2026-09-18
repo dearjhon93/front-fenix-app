@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormArray, Validators } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
-import { FacturaService } from './factura.service';
+import { FacturaService, FacturaCompraListado } from './factura.service';
 import { XMLParser } from 'fast-xml-parser';
 
 @Component({
@@ -11,7 +11,7 @@ import { XMLParser } from 'fast-xml-parser';
   styleUrl: './facturas.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class FacturasComponent {
+export class FacturasComponent implements OnInit {
   private fb = inject(FormBuilder);
   private facturaService = inject(FacturaService);
   private cdr = inject(ChangeDetectorRef);
@@ -27,6 +27,50 @@ export class FacturasComponent {
   responseSuccess = signal(false);
   xmlOriginal: File | null = null;
   codigoLocalSeleccionado = '';
+
+  historial = signal<FacturaCompraListado[]>([]);
+  cargandoHistorial = signal(true);
+  filtroHistorial = signal('');
+  expandedHistorial = signal<number | null>(null);
+
+  historialFiltrado = computed(() => {
+    const filtro = this.filtroHistorial().trim().toLowerCase();
+    const lista = this.historial();
+    if (!filtro) return lista;
+    return lista.filter((h) =>
+      `${h.estab}-${h.ptoEmi}-${h.secuencial} ${h.contribuyente?.razonSocial ?? ''} ${h.contribuyente?.identificacion ?? ''} ${h.claveAcceso ?? ''}`
+        .toLowerCase()
+        .includes(filtro)
+    );
+  });
+
+  ngOnInit(): void {
+    this.cargarHistorial();
+  }
+
+  cargarHistorial(): void {
+    this.cargandoHistorial.set(true);
+    this.facturaService.listarCompras().subscribe({
+      next: (data) => {
+        this.historial.set(data);
+        this.cargandoHistorial.set(false);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.historial.set([]);
+        this.cargandoHistorial.set(false);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  onFiltroHistorial(event: Event): void {
+    this.filtroHistorial.set((event.target as HTMLInputElement).value);
+  }
+
+  toggleHistorial(id: number): void {
+    this.expandedHistorial.set(this.expandedHistorial() === id ? null : id);
+  }
 
   get productos(): FormArray {
     return this.facturaForm.get('productos') as FormArray;
@@ -158,6 +202,7 @@ export class FacturasComponent {
         this.datosFacturaClean.set(null);
         this.codigoLocalSeleccionado = '';
         this.xmlOriginal = null;
+        this.cargarHistorial();
       },
       error: (err) => {
         this.saving.set(false);

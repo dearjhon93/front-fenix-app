@@ -4,6 +4,7 @@ import { LayoutComponent } from './layout/layout';
 import { DashboardComponent } from './pages/dashboard/dashboard';
 import { InventarioComponent } from './pages/inventario/inventario';
 import { FacturasComponent } from './pages/facturas/facturas';
+import { FacturasVentaComponent } from './pages/facturas-venta/facturas-venta';
 import { AuthGuard, RoleGuard } from './auth/auth.guard';
 import { ROLES } from './auth/auth.service';
 
@@ -25,6 +26,12 @@ export const routes: Routes = [
       {
         path: 'facturas',
         component: FacturasComponent,
+        canActivate: [RoleGuard],
+        data: { roles: [ROLES.ADMIN, ROLES.USUARIO] },
+      },
+      {
+        path: 'facturas-venta',
+        component: FacturasVentaComponent,
         canActivate: [RoleGuard],
         data: { roles: [ROLES.ADMIN, ROLES.USUARIO] },
       },

@@ -1,0 +1,264 @@
+<div class="d-flex flex-column gap-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <h4 class="fw-semibold text-dark m-0">Inventario</h4>
+      <span class="badge bg-primary rounded-pill">{{ totalElements() }} productos</span>
+    </div>
+    <button type="button" class="btn btn-outline-primary btn-sm" (click)="reload()" [disabled]="loading()">
+      @if (loading()) {
+        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+        Cargando...
+      } @else {
+        Actualizar
+      }
+    </button>
+  </div>
+
+  <!-- Resumen de la pagina -->
+  @if (!loading() && productos().length > 0) {
+    @let r = resumenPagina();
+    <div class="row g-3">
+      <div class="col-6 col-lg-3">
+        <div class="card border shadow-sm h-100 mini-kpi">
+          <div class="card-body py-2 d-flex justify-content-between align-items-center">
+            <span class="small text-secondary">Unidades totales</span>
+            <span class="fs-5 fw-bold text-dark">{{ r.stockTotal }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card border shadow-sm h-100 mini-kpi" [class]="r.sinStock > 0 ? 'border-danger-subtle' : ''">
+          <div class="card-body py-2 d-flex justify-content-between align-items-center">
+            <span class="small text-secondary">Sin stock</span>
+            <span class="fs-5 fw-bold" [class]="r.sinStock > 0 ? 'text-danger' : 'text-dark'">{{ r.sinStock }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card border shadow-sm h-100 mini-kpi" [class]="r.bajo > 0 ? 'border-warning-subtle' : ''">
+          <div class="card-body py-2 d-flex justify-content-between align-items-center">
+            <span class="small text-secondary">Stock bajo (≤ {{ UMBRAL_BAJO }})</span>
+            <span class="fs-5 fw-bold" [class]="r.bajo > 0 ? 'text-warning' : 'text-dark'">{{ r.bajo }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="card border shadow-sm h-100 mini-kpi">
+          <div class="card-body py-2 d-flex justify-content-between align-items-center">
+            <span class="small text-secondary">En esta página</span>
+            <span class="fs-5 fw-bold text-dark">{{ r.total }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Buscador + filtros -->
+  <div class="card border shadow-sm">
+    <div class="card-body d-flex flex-column flex-lg-row gap-2 align-items-stretch align-items-lg-center">
+      <div class="input-group flex-grow-1">
+        <span class="input-group-text bg-light text-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </svg>
+        </span>
+        <input
+          type="text"
+          placeholder="Buscar por código o descripción..."
+          [value]="searchTerm()"
+          (input)="onSearch($event)"
+          class="form-control"
+        />
+        @if (searchTerm()) {
+          <button type="button" class="btn btn-outline-secondary" (click)="clearSearch()" title="Limpiar búsqueda">
+            ✕
+          </button>
+        }
+      </div>
+      <div class="d-flex gap-2">
+        <select class="form-select w-auto" [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event)" aria-label="Filtrar por estado">
+          <option value="TODOS">Estado: todos</option>
+          <option value="ACT">Activos</option>
+          <option value="INA">Inactivos</option>
+        </select>
+        <select class="form-select w-auto" [ngModel]="filtroStock()" (ngModelChange)="filtroStock.set($event)" aria-label="Filtrar por stock">
+          <option value="TODOS">Stock: todos</option>
+          <option value="CON_STOCK">Con stock</option>
+          <option value="BAJO">Stock bajo</option>
+          <option value="SIN_STOCK">Sin stock</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="d-flex justify-content-center align-items-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+  } @else {
+    <div class="card border shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light sticky-head">
+            <tr>
+              <th class="text-uppercase small fw-semibold text-secondary" style="width: 2.5rem;"></th>
+              <th class="text-uppercase small fw-semibold text-secondary">Producto</th>
+              <th class="text-uppercase small fw-semibold text-secondary text-end">Precio venta</th>
+              <th class="text-uppercase small fw-semibold text-secondary">Estado</th>
+              <th class="text-uppercase small fw-semibold text-secondary">Stock</th>
+              <th class="text-uppercase small fw-semibold text-secondary">Locales</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of productosFiltrados(); track p.secProducto) {
+              @let total = stockTotal(p);
+              <tr
+                (click)="toggleExpand(p.secProducto)"
+                (keydown.enter)="toggleExpand(p.secProducto)"
+                tabindex="0"
+                class="row-click"
+                [class.table-active]="isExpanded(p.secProducto)"
+                title="Clic para ver el historial"
+              >
+                <td class="text-secondary text-center">
+                  <svg class="chevron" [class.open]="isExpanded(p.secProducto)" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m9 18 6-6-6-6"></path>
+                  </svg>
+                </td>
+                <td>
+                  <div class="fw-medium text-dark">{{ p.descripcion }}</div>
+                  <div class="small text-secondary">Sec. {{ p.secProducto }} · {{ p.codProductoProveedor }}</div>
+                  @if (p.nomProveedor) {
+                    <div class="small text-secondary">Prov. {{ p.nomProveedor }}</div>
+                  }
+                </td>
+                <td class="text-end fw-semibold text-nowrap">$ {{ p.precioVenta | number: '1.2-2' }}</td>
+                <td>
+                  <span class="badge" [class]="p.codEstado === 'ACT' ? 'bg-success' : 'bg-danger'">
+                    {{ p.codEstado === 'ACT' ? 'Activo' : p.codEstado }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge" [class]="stockClass(total)">{{ stockTexto(total) }}</span>
+                </td>
+                <td>
+                  @for (l of p.locales; track l.secLocal) {
+                    <div class="d-flex justify-content-between gap-3 small">
+                      <span class="fw-medium text-dark text-truncate">{{ l.desLocal }}</span>
+                      <span class="text-secondary text-nowrap">{{ l.cantidad }} uds.</span>
+                    </div>
+                  }
+                  @if (!p.locales || !p.locales.length) {
+                    <span class="small text-secondary">—</span>
+                  }
+                </td>
+              </tr>
+              @if (isExpanded(p.secProducto)) {
+                <tr class="table-active">
+                  <td></td>
+                  <td colspan="5" class="py-3">
+                    <div class="small fw-semibold text-secondary text-uppercase mb-2">
+                      Historial · {{ p.descripcion }}
+                    </div>
+                    @if (p.historial && p.historial.length) {
+                      <div class="table-responsive rounded border">
+                        <table class="table table-sm align-middle mb-0 bg-white">
+                          <thead class="table-light">
+                            <tr>
+                              <th class="small">Local</th>
+                              <th class="small text-end">Cantidad</th>
+                              <th class="small">Modificación</th>
+                              <th class="small">N° Factura</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (h of p.historial; track $index) {
+                              @let f = fechaHistorial(h);
+                              <tr>
+                                <td class="small">{{ h.desLocal }}</td>
+                                <td class="small text-end">{{ h.cantidad }} uds.</td>
+                                <td class="small text-nowrap">
+                                  {{ f ? (f | date: 'dd/MM/yyyy HH:mm') : '—' }}
+                                </td>
+                                <td class="small text-nowrap">{{ facturaHistorial(h) }}</td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    } @else {
+                      <div class="small text-secondary">Sin movimientos registrados</div>
+                    }
+                  </td>
+                </tr>
+              }
+            } @empty {
+              <tr>
+                <td colspan="6">
+                  <div class="text-center text-secondary py-5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-2 opacity-50">
+                      <path d="m7.5 4.27 9 5.15"></path>
+                      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
+                      <path d="m3.3 7 8.7 5 8.7-5"></path>
+                      <path d="M12 22V12"></path>
+                    </svg>
+                    @if (productos().length === 0) {
+                      <p class="mb-0">No hay productos registrados</p>
+                    } @else {
+                      <p class="mb-0">Ningún producto de esta página coincide con los filtros</p>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-2 border-top">
+        <div class="d-flex align-items-center gap-2 small text-secondary">
+          <label for="pageSize" class="m-0">Por página:</label>
+          <select
+            id="pageSize"
+            class="form-select form-select-sm w-auto"
+            [value]="size()"
+            (change)="onSizeChange($event)"
+          >
+            @for (s of pageSizes; track s) {
+              <option [value]="s">{{ s }}</option>
+            }
+          </select>
+          <span>
+            {{ totalElements() }} resultado(s) · Página {{ page() + 1 }} de {{ totalPages() || 1 }}
+          </span>
+        </div>
+
+        <nav aria-label="Paginación de productos">
+          <ul class="pagination pagination-sm m-0">
+            <li class="page-item" [class.disabled]="first() || loading()">
+              <button class="page-link" (click)="prevPage()" [disabled]="first() || loading()">
+                Anterior
+              </button>
+            </li>
+            @for (p of pagesToShow(); track p) {
+              <li class="page-item" [class.active]="p === page()">
+                <button class="page-link" (click)="goToPage(p)" [disabled]="loading()">
+                  {{ p + 1 }}
+                </button>
+              </li>
+            }
+            <li class="page-item" [class.disabled]="last() || loading()">
+              <button class="page-link" (click)="nextPage()" [disabled]="last() || loading()">
+                Siguiente
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  }
+</div>

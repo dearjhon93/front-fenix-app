@@ -1,79 +1,14 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { AuthService } from '../../auth/auth.service';
 import { DashboardService, DashboardResumenDto } from './dashboard.service';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [],
+  imports: [DecimalPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="d-flex flex-column gap-4">
-      <h4 class="fw-semibold text-dark m-0">Dashboard</h4>
-
-      <p class="text-secondary">
-        Bienvenido, {{ auth.currentUser()?.name }}
-      </p>
-
-      @if (loading()) {
-        <div class="d-flex justify-content-center align-items-center py-5">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Cargando...</span>
-          </div>
-        </div>
-      } @else {
-        <div class="row g-3">
-          <div class="col-sm-6 col-lg-4">
-            <div class="card border shadow-sm h-100">
-              <div class="card-body d-flex flex-column gap-1">
-                <span class="text-uppercase small fw-medium text-secondary">Productos</span>
-                <span class="fs-2 fw-bold text-dark">{{ resumen()?.totalProductos }}</span>
-              </div>
-            </div>
-          </div>
-          <!--<div class="col-sm-6 col-lg-4">
-            <div class="card border shadow-sm h-100">
-              <div class="card-body d-flex flex-column gap-1">
-                <span class="text-uppercase small fw-medium text-secondary">Proveedores</span>
-                <span class="fs-2 fw-bold text-dark">{{ resumen()?.totalProveedores }}</span>
-              </div>
-            </div>
-          </div>-->
-          <div class="col-sm-6 col-lg-4">
-            <div class="card border shadow-sm h-100">
-              <div class="card-body d-flex flex-column gap-1">
-                <span class="text-uppercase small fw-medium text-secondary">Facturas Compra</span>
-                <span class="fs-2 fw-bold text-dark">{{ resumen()?.totalFacturas }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="col-sm-6 col-lg-4">
-            <div class="card border shadow-sm h-100">
-              <div class="card-body d-flex flex-column gap-1">
-                <span class="text-uppercase small fw-medium text-secondary">Total Facturas Compra</span>
-                <span class="fs-2 fw-bold text-dark">\${{ resumen()?.ventasTotales }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="col-sm-6 col-lg-4">
-            <div class="card border shadow-sm h-100">
-              <div class="card-body d-flex flex-column gap-1">
-                <span class="text-uppercase small fw-medium text-secondary">Usuarios</span>
-                <span class="fs-2 fw-bold text-dark">{{ resumen()?.totalUsuarios }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="col-sm-6 col-lg-4">
-            <div class="card border shadow-sm h-100">
-              <div class="card-body d-flex flex-column gap-1">
-                <span class="text-uppercase small fw-medium text-secondary">Locales</span>
-                <span class="fs-2 fw-bold text-dark">{{ resumen()?.totalLocales }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      }
-    </div>
-  `,
+  templateUrl: './dashboard.html',
+  styleUrl: './dashboard.scss',
 })
 export class DashboardComponent implements OnInit {
   private dashboardService = inject(DashboardService);
@@ -81,16 +16,76 @@ export class DashboardComponent implements OnInit {
 
   resumen = signal<DashboardResumenDto | null>(null);
   loading = signal(true);
+  error = signal('');
+
+  maxSerieMensual = computed(() => {
+    const r = this.resumen();
+    if (!r) return 1;
+    const valores = [
+      ...(r.ventasUltimos6Meses ?? []).map((p) => +p.total || 0),
+      ...(r.comprasUltimos6Meses ?? []).map((p) => +p.total || 0),
+    ];
+    return Math.max(1, ...valores);
+  });
+
+  maxSerieDiaria = computed(() => {
+    const puntos = this.resumen()?.ventasUltimos7Dias ?? [];
+    return Math.max(1, ...puntos.map((p) => +p.total || 0));
+  });
+
+  maxTopCliente = computed(() => {
+    const top = this.resumen()?.topClientes ?? [];
+    return Math.max(1, ...top.map((c) => +c.totalComprado || 0));
+  });
 
   ngOnInit(): void {
+    this.load();
+  }
+
+  load(): void {
+    this.loading.set(true);
+    this.error.set('');
     this.dashboardService.getResumen().subscribe({
       next: (data) => {
         this.resumen.set(data);
         this.loading.set(false);
       },
       error: () => {
+        this.error.set('No se pudo cargar el resumen del dashboard.');
         this.loading.set(false);
       },
     });
+  }
+
+  mesLabel(periodo: string): string {
+    // "2026-09" -> "sep 26"
+    const [anio, mes] = periodo.split('-');
+    const nombres = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const idx = Math.min(12, Math.max(1, +mes)) - 1;
+    return `${nombres[idx]} ${anio.slice(2)}`;
+  }
+
+  diaLabel(periodo: string): string {
+    // "2026-09-17" -> "17/09"
+    const partes = periodo.split('-');
+    return partes.length === 3 ? `${partes[2]}/${partes[1]}` : periodo;
+  }
+
+  barraPct(valor: number, max: number): number {
+    if (!max || max <= 0) return 0;
+    return Math.max(3, Math.round(((+valor || 0) / max) * 100));
+  }
+
+  crecimientoClass(valor: number | null | undefined): string {
+    if (valor == null) return 'bg-secondary-subtle text-secondary';
+    return valor >= 0
+      ? 'bg-success-subtle text-success'
+      : 'bg-danger-subtle text-danger';
+  }
+
+  crecimientoTexto(valor: number | null | undefined): string {
+    if (valor == null) return 'sin datos';
+    const signo = valor >= 0 ? '+' : '';
+    return `${signo}${valor} % vs mes anterior`;
   }
 }

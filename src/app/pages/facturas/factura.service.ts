@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface FacturaDetalleDto {
@@ -62,6 +63,49 @@ export interface FacturaDto {
   infoTributaria: InfoTributariaDto;
   infoFactura: InfoFacturaDto;
   detalles: { detalle: FacturaDetalleDto[] };
+}
+
+export interface FacturaCompraContribuyente {
+  id: number;
+  tipoIdentificacion: string;
+  identificacion: string;
+  razonSocial: string;
+  direccion?: string;
+}
+
+export interface FacturaCompraDetalleListado {
+  id: number;
+  codigoPrincipal: string;
+  codigoAuxiliar?: string;
+  descripcion: string;
+  cantidad: number;
+  precioUnitario: number;
+  descuento: number;
+  precioTotalSinImpuesto: number;
+}
+
+export interface FacturaCompraListado {
+  id: number;
+  estab: string;
+  ptoEmi: string;
+  secuencial: string;
+  fechaEmision: string;
+  razonSocial: string;
+  ruc: string;
+  claveAcceso: string;
+  totalSinImpuestos: number;
+  totalDescuento: number;
+  importeTotal: number;
+  contribuyente: FacturaCompraContribuyente | null;
+  detalles: FacturaCompraDetalleListado[] | null | undefined;
+  formasPago: { formaPago: string; total: number }[];
+}
+
+interface ApiResponse<T> {
+  status: number;
+  message: string;
+  data: T;
+  timestamp: string;
 }
 
 @Injectable({
@@ -224,5 +268,11 @@ export class FacturaService {
 
   guardarFactura(factura: FacturaDto): Observable<any> {
     return this.http.post(`${environment.apiUrl}/facturas/guardar`, factura);
+  }
+
+  listarCompras(): Observable<FacturaCompraListado[]> {
+    return this.http
+      .get<ApiResponse<FacturaCompraListado[]>>(`${environment.apiUrl}/facturas/compras`)
+      .pipe(map((res) => res.data ?? []));
   }
 }
