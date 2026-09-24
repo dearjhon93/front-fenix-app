@@ -8,16 +8,21 @@ export interface ProductoLocalDto {
   secLocal: number;
   desLocal: string;
   cantidad: number;
+  observacion?: string | null;
+  idFactura?: number | null;
+  numFactura?: string | null;
 }
 
 export interface ProductoHistorialDto {
   secLocal: number;
   desLocal: string;
   cantidad: number;
+  observacion?: string | null;
   fechaInicio: string | null;
   fechaFin: string | null;
   fechaModificacion: string | null;
   idFactura?: number | null;
+  numFactura?: string | null;
   numeroFactura?: string | null;
 }
 
@@ -55,6 +60,12 @@ export interface ProductosPageParams {
   search?: string;
 }
 
+export interface ActualizarCantidadRequest {
+  cantidad: number;
+  observacion?: string | null;
+  codUsuarioModificacion?: string | null;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -75,6 +86,19 @@ export class InventarioService {
       .get<ApiResponse<PageResponse<ProductoDto>>>(`${environment.apiUrl}/productos`, {
         params: httpParams,
       })
+      .pipe(map((res) => res.data));
+  }
+
+  actualizarCantidad(
+    secProducto: number,
+    secLocal: number,
+    payload: ActualizarCantidadRequest
+  ): Observable<ProductoLocalDto> {
+    return this.http
+      .put<ApiResponse<ProductoLocalDto>>(
+        `${environment.apiUrl}/productos/${secProducto}/locales/${secLocal}`,
+        payload
+      )
       .pipe(map((res) => res.data));
   }
 }

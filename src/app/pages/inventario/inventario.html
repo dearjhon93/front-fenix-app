@@ -111,6 +111,7 @@
               <th class="text-uppercase small fw-semibold text-secondary">Estado</th>
               <th class="text-uppercase small fw-semibold text-secondary">Stock</th>
               <th class="text-uppercase small fw-semibold text-secondary">Locales</th>
+              <th class="text-uppercase small fw-semibold text-secondary text-end">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -148,8 +149,28 @@
                 <td>
                   @for (l of p.locales; track l.secLocal) {
                     <div class="d-flex justify-content-between gap-3 small">
-                      <span class="fw-medium text-dark text-truncate">{{ l.desLocal }}</span>
+                      <span class="fw-medium text-dark text-truncate" [title]="l.observacion || ''">{{ l.desLocal }}</span>
                       <span class="text-secondary text-nowrap">{{ l.cantidad }} uds.</span>
+                    </div>
+                    @if (l.observacion) {
+                      <div class="small text-secondary text-truncate fst-italic">Obs: {{ l.observacion }}</div>
+                    }
+                  }
+                  @if (!p.locales || !p.locales.length) {
+                    <span class="small text-secondary">—</span>
+                  }
+                </td>
+                <td class="text-end" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
+                  @for (l of p.locales; track l.secLocal) {
+                    <div class="mb-1">
+                      <button
+                        type="button"
+                        class="btn btn-outline-primary btn-sm"
+                        (click)="openEdit(p, l.secLocal, $event)"
+                        [title]="'Editar stock en ' + l.desLocal"
+                      >
+                        Editar
+                      </button>
                     </div>
                   }
                   @if (!p.locales || !p.locales.length) {
@@ -160,7 +181,7 @@
               @if (isExpanded(p.secProducto)) {
                 <tr class="table-active">
                   <td></td>
-                  <td colspan="5" class="py-3">
+                  <td colspan="6" class="py-3">
                     <div class="small fw-semibold text-secondary text-uppercase mb-2">
                       Historial · {{ p.descripcion }}
                     </div>
@@ -171,6 +192,7 @@
                             <tr>
                               <th class="small">Local</th>
                               <th class="small text-end">Cantidad</th>
+                              <th class="small">Observación</th>
                               <th class="small">Modificación</th>
                               <th class="small">N° Factura</th>
                             </tr>
@@ -181,6 +203,7 @@
                               <tr>
                                 <td class="small">{{ h.desLocal }}</td>
                                 <td class="small text-end">{{ h.cantidad }} uds.</td>
+                                <td class="small">{{ h.observacion || '—' }}</td>
                                 <td class="small text-nowrap">
                                   {{ f ? (f | date: 'dd/MM/yyyy HH:mm') : '—' }}
                                 </td>
@@ -198,7 +221,7 @@
               }
             } @empty {
               <tr>
-                <td colspan="6">
+                <td colspan="7">
                   <div class="text-center text-secondary py-5">
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-2 opacity-50">
                       <path d="m7.5 4.27 9 5.15"></path>
@@ -262,3 +285,96 @@
     </div>
   }
 </div>
+
+@if (editOpen()) {
+  <div
+    class="modal-backdrop show edit-backdrop"
+    (click)="closeEdit()"
+  ></div>
+  <div
+    class="modal d-block edit-modal"
+    tabindex="-1"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Editar cantidad de producto"
+    (click)="closeEdit()"
+  >
+    <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+      <div class="modal-content shadow">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar stock</h5>
+          <button
+            type="button"
+            class="btn-close"
+            aria-label="Cerrar"
+            (click)="closeEdit()"
+            [disabled]="editSaving()"
+          ></button>
+        </div>
+        <div class="modal-body d-flex flex-column gap-3">
+          <div>
+            <div class="fw-semibold text-dark">{{ editProducto()?.descripcion }}</div>
+            <div class="small text-secondary">
+              Sec. {{ editProducto()?.secProducto }} · {{ editDesLocal() }}
+            </div>
+          </div>
+
+          <div>
+            <label for="editCantidad" class="form-label small fw-semibold">Cantidad</label>
+            <input
+              id="editCantidad"
+              type="number"
+              min="0"
+              step="1"
+              class="form-control"
+              [ngModel]="editCantidad()"
+              (ngModelChange)="editCantidad.set($event)"
+              [disabled]="editSaving()"
+            />
+          </div>
+
+          <div>
+            <label for="editObservacion" class="form-label small fw-semibold">Observación</label>
+            <textarea
+              id="editObservacion"
+              rows="3"
+              maxlength="500"
+              placeholder="Ej: ajuste por conteo físico, mercadería dañada..."
+              class="form-control"
+              [ngModel]="editObservacion()"
+              (ngModelChange)="editObservacion.set($event)"
+              [disabled]="editSaving()"
+            ></textarea>
+          </div>
+
+          @if (editError()) {
+            <div class="alert alert-danger py-2 px-3 small mb-0">{{ editError() }}</div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            (click)="closeEdit()"
+            [disabled]="editSaving()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="saveEdit()"
+            [disabled]="editSaving()"
+          >
+            @if (editSaving()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+              Guardando...
+            } @else {
+              Guardar
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

@@ -33,6 +33,16 @@ export class InventarioComponent implements OnInit, OnDestroy {
   loading = signal(true);
   expandedId = signal<number | null>(null);
 
+  // Modal editar cantidad + observación
+  editOpen = signal(false);
+  editProducto = signal<ProductoDto | null>(null);
+  editSecLocal = signal<number | null>(null);
+  editDesLocal = signal('');
+  editCantidad = signal<number | null>(null);
+  editObservacion = signal('');
+  editSaving = signal(false);
+  editError = signal<string | null>(null);
+
   filtroEstado = signal<FiltroEstado>('TODOS');
   filtroStock = signal<FiltroStock>('TODOS');
 
@@ -123,6 +133,68 @@ export class InventarioComponent implements OnInit, OnDestroy {
 
   isExpanded(secProducto: number): boolean {
     return this.expandedId() === secProducto;
+  }
+
+  openEdit(p: ProductoDto, secLocal: number, event?: Event): void {
+    event?.stopPropagation();
+    const local = (p.locales ?? []).find((l) => l.secLocal === secLocal);
+    this.editProducto.set(p);
+    this.editSecLocal.set(secLocal);
+    this.editDesLocal.set(local?.desLocal ?? '');
+    this.editCantidad.set(local?.cantidad ?? 0);
+    this.editObservacion.set(local?.observacion ?? '');
+    this.editError.set(null);
+    this.editOpen.set(true);
+    // Asegura que el detalle del producto quede visible al guardar
+    this.expandedId.set(p.secProducto);
+  }
+
+  closeEdit(): void {
+    if (this.editSaving()) return;
+    this.editOpen.set(false);
+    this.editProducto.set(null);
+    this.editSecLocal.set(null);
+    this.editError.set(null);
+  }
+
+  saveEdit(): void {
+    const producto = this.editProducto();
+    const secLocal = this.editSecLocal();
+    const cantidad = this.editCantidad();
+    if (!producto || secLocal === null || secLocal === undefined) return;
+
+    if (cantidad === null || cantidad === undefined || Number.isNaN(Number(cantidad))) {
+      this.editError.set('Ingrese una cantidad válida.');
+      return;
+    }
+    if (Number(cantidad) < 0) {
+      this.editError.set('La cantidad no puede ser negativa.');
+      return;
+    }
+
+    this.editSaving.set(true);
+    this.editError.set(null);
+
+    this.inventarioService
+      .actualizarCantidad(producto.secProducto, secLocal, {
+        cantidad: Number(cantidad),
+        observacion: this.editObservacion()?.trim() || null,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.editSaving.set(false);
+          this.editOpen.set(false);
+          // Recargar para reflejar nueva cantidad + observación en stock e histórico
+          this.loadProductos();
+        },
+        error: (err) => {
+          this.editSaving.set(false);
+          const msg =
+            err?.error?.message || err?.message || 'No se pudo guardar el ajuste.';
+          this.editError.set(String(msg));
+        },
+      });
   }
 
   stockTotal(p: ProductoDto): number {

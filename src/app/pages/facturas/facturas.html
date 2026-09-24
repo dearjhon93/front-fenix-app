@@ -107,7 +107,7 @@
                 @for (detalle of asArray(f?.detalles?.detalle); track detalle) {
                   <tr [formGroupName]="$index">
                     <td class="fw-medium">{{ detalle.descripcion }}</td>
-                    <td class="text-end">{{ detalle.detallesAdicionales==null ? 'N/A':detalle.detallesAdicionales.detAdicional[0].valor }}</td>
+                    <td class="text-end">{{ detalle.detallesAdicionales==null ? 'N/A':detalle.detallesAdicionales.detAdicional[0]!=null?  detalle.detallesAdicionales.detAdicional[0].valor : detalle.detallesAdicionales.detAdicional.valor}}</td>
                     <td class="text-end">
                       <div class="input-group input-group-sm w-auto ms-auto" style="max-width: 60px">
                         <input
