@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FacturaVentaDto, FacturaVentaListado, FacturaVentaPagoDto, FacturaVentaService } from './factura-venta.service';
+import { ReporteService } from '../../reportes/reporte.service';
 
 @Component({
   selector: 'app-facturas-venta',
@@ -11,6 +12,7 @@ import { FacturaVentaDto, FacturaVentaListado, FacturaVentaPagoDto, FacturaVenta
 })
 export class FacturasVentaComponent implements OnInit {
   private facturaVentaService = inject(FacturaVentaService);
+  private reporteService = inject(ReporteService);
   private cdr = inject(ChangeDetectorRef);
 
   factura = signal<FacturaVentaDto | null>(null);
@@ -22,6 +24,7 @@ export class FacturasVentaComponent implements OnInit {
 
   historial = signal<FacturaVentaListado[]>([]);
   cargandoHistorial = signal(true);
+  descargandoReporte = signal(false);
   filtroHistorial = signal('');
   expandedHistorial = signal<string | null>(null);
 
@@ -52,6 +55,22 @@ export class FacturasVentaComponent implements OnInit {
         this.historial.set([]);
         this.cargandoHistorial.set(false);
         this.cdr.markForCheck();
+      },
+    });
+  }
+
+  descargarReporte(): void {
+    if (this.descargandoReporte()) return;
+    this.descargandoReporte.set(true);
+    this.reporteService.descargarFacturasVenta().subscribe({
+      next: () => {
+        this.descargandoReporte.set(false);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.descargandoReporte.set(false);
+        this.cdr.markForCheck();
+        alert('No se pudo descargar el reporte de facturas de venta.');
       },
     });
   }

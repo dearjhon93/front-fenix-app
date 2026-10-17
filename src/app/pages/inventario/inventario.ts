@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { InventarioService, ProductoDto } from './inventario.service';
+import { ReporteService } from '../../reportes/reporte.service';
 
 export type FiltroEstado = 'TODOS' | 'ACT' | 'INA';
 export type FiltroStock = 'TODOS' | 'CON_STOCK' | 'SIN_STOCK' | 'BAJO';
@@ -25,12 +26,14 @@ export type FiltroStock = 'TODOS' | 'CON_STOCK' | 'SIN_STOCK' | 'BAJO';
 })
 export class InventarioComponent implements OnInit, OnDestroy {
   private inventarioService = inject(InventarioService);
+  private reporteService = inject(ReporteService);
   private destroy$ = new Subject<void>();
   private search$ = new Subject<string>();
 
   productos = signal<ProductoDto[]>([]);
   searchTerm = signal('');
   loading = signal(true);
+  descargandoReporte = signal(false);
   expandedId = signal<number | null>(null);
 
   // Modal editar cantidad + observación
@@ -125,6 +128,21 @@ export class InventarioComponent implements OnInit, OnDestroy {
 
   reload(): void {
     this.loadProductos();
+  }
+
+  descargarReporte(): void {
+    if (this.descargandoReporte()) return;
+    this.descargandoReporte.set(true);
+    this.reporteService
+      .descargarProductos()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => this.descargandoReporte.set(false),
+        error: () => {
+          this.descargandoReporte.set(false);
+          alert('No se pudo descargar el reporte de productos.');
+        },
+      });
   }
 
   toggleExpand(secProducto: number): void {

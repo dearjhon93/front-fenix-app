@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, inject
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormArray, Validators } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { FacturaService, FacturaCompraListado } from './factura.service';
+import { ReporteService } from '../../reportes/reporte.service';
 import { XMLParser } from 'fast-xml-parser';
 
 @Component({
@@ -14,6 +15,7 @@ import { XMLParser } from 'fast-xml-parser';
 export class FacturasComponent implements OnInit {
   private fb = inject(FormBuilder);
   private facturaService = inject(FacturaService);
+  private reporteService = inject(ReporteService);
   private cdr = inject(ChangeDetectorRef);
 
   facturaForm = this.fb.group({
@@ -30,6 +32,7 @@ export class FacturasComponent implements OnInit {
 
   historial = signal<FacturaCompraListado[]>([]);
   cargandoHistorial = signal(true);
+  descargandoReporte = signal(false);
   filtroHistorial = signal('');
   expandedHistorial = signal<number | null>(null);
 
@@ -60,6 +63,22 @@ export class FacturasComponent implements OnInit {
         this.historial.set([]);
         this.cargandoHistorial.set(false);
         this.cdr.markForCheck();
+      },
+    });
+  }
+
+  descargarReporte(): void {
+    if (this.descargandoReporte()) return;
+    this.descargandoReporte.set(true);
+    this.reporteService.descargarFacturasCompra().subscribe({
+      next: () => {
+        this.descargandoReporte.set(false);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.descargandoReporte.set(false);
+        this.cdr.markForCheck();
+        alert('No se pudo descargar el reporte de facturas de compra.');
       },
     });
   }
